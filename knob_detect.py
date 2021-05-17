@@ -73,15 +73,17 @@ def main_erosion():
 
     while True:
         thresh_c = cv.getTrackbarPos('adaptive C', 'erosion angle')
-        blurred = cv.GaussianBlur(img_gray, (5, 5), 0)
-        ret, thresh = cv.threshold(blurred, thresh_c, 255, cv.THRESH_BINARY)
-        combined = np.concatenate((img_gray, thresh), axis=1)
+        blurred = cv.GaussianBlur(img_gray, (7, 7), 0)
+        #  ret, thresh = cv.threshold(blurred, thresh_c, 255, cv.THRESH_BINARY)
+        #  thresh = cv.adaptiveThreshold(blurred
+        combined = np.concatenate((img_gray, blurred, thresh), axis=1)
         cv.imshow('erosion angle', combined)
         if cv.waitKey(1000) & 0xFF == ord('q'):
             cv.destroyAllWindows()
             break
 
 def edge_morph(filename, cannyThreshold1, cannyThreshold2):
+    """ Cant get thresholds right """
     img = cv.imread(filename)
     img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
@@ -130,5 +132,5 @@ def main_edge_morph():
 
 
 #  main_hough()
-#  main_erosion()
-main_edge_morph()
+main_erosion()
+#  main_edge_morph()
