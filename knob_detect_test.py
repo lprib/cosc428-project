@@ -1,5 +1,6 @@
 import cv2 as cv
 import numpy as np
+import sys
 
 nothing = lambda x: None
 
@@ -14,50 +15,54 @@ def get_start_end(rho, theta):
     y2 = int(y0 - 1000*(a))
     return (x1, y1), (x2, y2)
 
-def main_hough():
-    img_orig = cv.imread("single_knob4.png")
+def do_hough_image(filename, cannyThreshold1, cannyThreshold2, houghThreshold):
+    img_orig = cv.imread(filename)
     img = cv.cvtColor(img_orig, cv.COLOR_BGR2GRAY)
+    drawing = img_orig.copy()
+    edges = cv.Canny(img, cannyThreshold1, cannyThreshold2)
+    lines = cv.HoughLines(edges, 1, np.pi/180, houghThreshold)
 
+    if lines is not None:
+        for line in lines:
+            for rho,theta in line:
+                start, end = get_start_end(rho, theta)
+                cv.line(drawing, start, end, (0, 0, 255), 2)
+        # Get list of just thetas
+        thetas = lines[:,:,1].reshape((-1))
+        avg_theta = np.average(thetas)
+        # Rotate such that theta is an angle around the origin of the line, not perpendicular line
+        avg_theta = (np.pi - avg_theta) % np.pi
+
+        # draw line from center of image
+        center = (int(drawing.shape[0] / 2), int(drawing.shape[1] / 2))
+        r = center[0]
+        dims = (int(r*np.sin(avg_theta)), int(r*np.cos(avg_theta)))
+        cv.line(drawing, center, (center[0] + dims[0], center[1] + dims[1]), (255, 0, 0), 3)
+
+    combined = np.concatenate((drawing, cv.cvtColor(edges, cv.COLOR_GRAY2BGR)), axis=1)
+    return combined
+
+
+def main_hough():
     cv.namedWindow('Hough Line Transform')
-    cv.createTrackbar('CannyThreshold1', 'Hough Line Transform', 0, 1200, nothing)
-    cv.createTrackbar('CannyThreshold2', 'Hough Line Transform', 0, 1200, nothing)
-    cv.createTrackbar("HoughThreshold", 'Hough Line Transform', 0, 200, nothing)
+    cv.createTrackbar('CannyThreshold1', 'Hough Line Transform', 59, 255, nothing)
+    cv.createTrackbar('CannyThreshold2', 'Hough Line Transform', 144, 255, nothing)
+    cv.createTrackbar("HoughThreshold", 'Hough Line Transform', 10, 200, nothing)
 
     while True:
         cannyThreshold1 = cv.getTrackbarPos('CannyThreshold1', 'Hough Line Transform')
         cannyThreshold2 = cv.getTrackbarPos('CannyThreshold2', 'Hough Line Transform')
         houghThreshold = cv.getTrackbarPos('HoughThreshold', 'Hough Line Transform')
 
-        drawing = img_orig.copy()
-        edges = cv.Canny(img, cannyThreshold1, cannyThreshold2)
-        lines = cv.HoughLines(edges, 1, np.pi/180, houghThreshold)
+        combined = np.concatenate((
+            do_hough_image("single_knob000.png", cannyThreshold1, cannyThreshold2, houghThreshold),
+            do_hough_image("single_knob001.png", cannyThreshold1, cannyThreshold2, houghThreshold),
+            do_hough_image("single_knob002.png", cannyThreshold1, cannyThreshold2, houghThreshold),
+            do_hough_image("single_knob003.png", cannyThreshold1, cannyThreshold2, houghThreshold)),
+            axis=0
+        )
 
         #  print(lines.shape)
-        if lines is not None:
-            for line in lines:
-                #  print(line)
-                #  print()
-                for rho,theta in line:
-                    start, end = get_start_end(rho, theta)
-                    cv.line(drawing, start, end, (0, 0, 255), 2)
-            # Get list of just thetas
-            #  thetas = lines[:,:,1].reshape((-1))
-            # The lines are outputted in order of votes, so weight the first ones higher in avg
-            #  avg_theta = np.average(thetas)
-            #  avg_theta = np.average(thetas, weights=np.flip(np.arange(len(thetas))))
-            # Due to the format of (rho, theta), need to rotate 90 to get angle around origin
-            #  avg_theta = avg_theta - np.pi / 2
-            avg_theta = thetas[0] - np.pi / 2
-
-
-            # draw line from center of image
-            center = (int(drawing.shape[0] / 2), int(drawing.shape[1] / 2))
-            r = center[0]
-            dims = (int(r*np.sin(avg_theta)), int(r*np.cos(avg_theta)))
-            cv.line(drawing, center, (center[0] + dims[0], center[1] + dims[1]), (255, 0, 0), 3)
-
-
-        combined = np.concatenate((drawing, cv.cvtColor(edges, cv.COLOR_GRAY2BGR)), axis=1)
         cv.imshow('Hough Line Transform', combined)
 
         if cv.waitKey(1000) & 0xFF == ord('q'):
@@ -74,7 +79,7 @@ def main_erosion():
     while True:
         thresh_c = cv.getTrackbarPos('adaptive C', 'erosion angle')
         blurred = cv.GaussianBlur(img_gray, (7, 7), 0)
-        #  ret, thresh = cv.threshold(blurred, thresh_c, 255, cv.THRESH_BINARY)
+        ret, thresh = cv.threshold(blurred, thresh_c, 255, cv.THRESH_BINARY)
         #  thresh = cv.adaptiveThreshold(blurred
         combined = np.concatenate((img_gray, blurred, thresh), axis=1)
         cv.imshow('erosion angle', combined)
@@ -131,6 +136,6 @@ def main_edge_morph():
             break
 
 
-#  main_hough()
-main_erosion()
-#  main_edge_morph()
+main_hough()
+#main_erosion()
+#main_edge_morph()

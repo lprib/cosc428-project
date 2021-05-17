@@ -80,11 +80,15 @@ def transform(frame, draw_debug=False):
 
     contours, hierarchy = cv.findContours(thresh_img, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
+    contour_img = np.zeros((thresh_img.shape[0], thresh_img.shape[1], 3))
+    if draw_debug:
+        cv.drawContours(contour_img, contours, -1, (255, 0, 0), 1)
+        cv.imshow("contour metadata", contour_img)
+
     # There should be four contours (ie. the outline of the four colored squares)
     if len(contours) != 4:
         return False, None
 
-    contour_img = np.zeros((thresh_img.shape[0], thresh_img.shape[1], 3))
     #  quad_points = get_quad_convex_hull(contours, contour_img)
     quad_points = get_quad_centroids(contours)
     # Error if not a quad
@@ -92,7 +96,6 @@ def transform(frame, draw_debug=False):
         return False, None
 
     if draw_debug:
-        cv.drawContours(contour_img, contours, -1, (255, 0, 0), 1)
         cv.circle(contour_img, tuple(quad_points[0]), 10, (255, 255, 255))
         cv.imshow("contour metadata", contour_img)
     
