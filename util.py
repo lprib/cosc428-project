@@ -1,9 +1,10 @@
 import numpy as np
 import cv2 as cv
 import csv
+from transform_color_mark import transform
 
-def run_camera_loop(cam_w, cam_h, camera_matrix_file, distortion_coeff_file, mouse_window_name, callback):
-    cap = cv.VideoCapture(-1)  # Open the first camera connected to the computer.
+def setup_camera(cam_w, cam_h, camera_matrix_file, distortion_coeff_file):
+    cap = cv.VideoCapture(-1)
 
     cap.set(cv.CAP_PROP_FRAME_WIDTH, cam_w)
     cap.set(cv.CAP_PROP_FRAME_HEIGHT, cam_h)
@@ -16,6 +17,21 @@ def run_camera_loop(cam_w, cam_h, camera_matrix_file, distortion_coeff_file, mou
     new_camera_matrix, camera_crop_region = cv.getOptimalNewCameraMatrix(camera_matrix, distortion_coeff, (w,h), 1, (w,h))
     mapx, mapy = cv.initUndistortRectifyMap(camera_matrix, distortion_coeff, None, new_camera_matrix, (w,h), cv.CV_16SC2)
 
+    # return in the args format expected by cv.undistort
+    return cap, camera_crop_region, (camera_matrix, distortion_coeff, None, new_camera_matrix)
+
+
+def preprocess_frame(setup_camera_info):
+    cap, crop, distort_info = setup_camera_info
+    ret, frame = cap.read()
+    frame = cv.undistort(frame, *distort_info)
+
+    crop_x, crop_y, crop_w, crop_h = crop
+    return frame[crop_y:crop_y+crop_h, crop_x:crop_x+crop_w]
+
+
+def run_camera_loop(cam_w, cam_h, camera_matrix_file, distortion_coeff_file, mouse_window_name, callback):
+    cam_info = setup_camera(cam_w, cam_h, camera_matrix_file, distortion_coeff_file)
 
     mouse_x, mouse_y = 0, 0
     def mouse_callback(event, x, y, flags, param):
@@ -28,11 +44,7 @@ def run_camera_loop(cam_w, cam_h, camera_matrix_file, distortion_coeff_file, mou
     cv.setMouseCallback(mouse_window_name, mouse_callback)
 
     while True:
-        ret, frame = cap.read()
-        frame = cv.undistort(frame, camera_matrix, distortion_coeff, None, new_camera_matrix)
-
-        crop_x, crop_y, crop_w, crop_h = camera_crop_region
-        frame = frame[crop_y:crop_y+crop_h, crop_x:crop_x+crop_w]
+        frame = preprocess_frame(cam_info)
 
         key = cv.waitKey(20) & 0xFF
         if key == ord('q'):
@@ -55,7 +67,24 @@ def sub_image(img, rect):
 def pad_to_width(img, width):
     return cv.copyMakeBorder(img, 0, 0, 0, width - img.shape[1], cv.BORDER_CONSTANT, value=(0, 0, 0))
 
-def control_detect_test(win_name, trackbar_info, input_image_name, test_function, control_indices=None):
+def control_detect_test_static(input_image_name, *args, **kwargs):
+    main_img = cv.imread(input_image_name, -1)
+    control_detect_test(lambda: main_img, *args, **kwargs)
+
+def control_detect_test_video(*args, **kwargs):
+    cam_info = setup_camera(1280, 720, "data/camera_matrix_720.npy", "data/distortion_coeff_720.npy")
+
+    blank = np.zeros((490, 1650, 3), dtype=np.uint8)
+    def image_producer():
+        nonlocal blank, cam_info
+        frame = preprocess_frame(cam_info)
+        success, transformed = transform(frame, draw_debug=True, debug_scale=0.5)
+        return (transformed if success else blank), frame
+
+    control_detect_test(image_producer, *args, **kwargs)
+
+
+def control_detect_test(image_producer, test_function, win_name, trackbar_info, control_indices=None, draw_ref_img=False):
     """
     win_name: name of window
     trackbar_info: iterator of (trackbar_name, trackbar_value, trackbar_max_value)
@@ -72,14 +101,23 @@ def control_detect_test(win_name, trackbar_info, input_image_name, test_function
     if control_indices is not None:
         controls = [c for i, c in enumerate(controls) if i in control_indices]
 
-    main_img = cv.imread(input_image_name, -1)
 
     while True:
+        main_img, cam_img = image_producer()
+        if draw_ref_img:
+            cv.imshow("reference_image", main_img)
+            cv.imshow("camera_image", cam_img)
+
         trackbar_data = tuple(cv.getTrackbarPos(name, win_name) for name, _, _ in trackbar_info)
+
+        keys = cv.waitKey(20) & 0xff
+        if keys == ord('q'):
+            cv.destroyAllWindows()
+            break
 
         # Get the test output for each controller test input
         # This will be an array of (array of image)
-        test_outputs = [test_function(sub_image(main_img, control_box), *trackbar_data) for control_box in controls]
+        test_outputs = [test_function(sub_image(main_img, control_box), keys, *trackbar_data) for control_box in controls]
 
         # get the max width of a column, for padding
         max_widths = [
@@ -98,6 +136,3 @@ def control_detect_test(win_name, trackbar_info, input_image_name, test_function
         #  print(lines.shape)
         cv.imshow(win_name, combined)
 
-        if cv.waitKey(20) & 0xFF == ord('q'):
-            cv.destroyAllWindows()
-            break

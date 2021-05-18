@@ -1,7 +1,10 @@
 import cv2 as cv
 import numpy as np
 import sys
-from util import get_control_positions, sub_image, control_detect_test
+from util import get_control_positions, sub_image, control_detect_test_static, control_detect_test_video
+
+def gray(img):
+    return cv.cvtColor(img, cv.COLOR_GRAY2BGR)
 
 def get_start_end(rho, theta):
     a = np.cos(theta)
@@ -21,11 +24,12 @@ def distance_to_point(start, end, point):
         (end[0] - start[0])*(end[0] - start[0]) + (end[1] - start[1])*(end[1] - start[1])
     )
 
-def do_hough_image(img_orig, cannyThreshold1, cannyThreshold2, houghThreshold):
-    drawing = img_orig.copy()
+def do_hough_image(img_orig, keys, cannyThreshold1, cannyThreshold2, houghThreshold):
     img = cv.cvtColor(img_orig, cv.COLOR_BGR2GRAY)
     edges = cv.Canny(img, cannyThreshold1, cannyThreshold2)
     lines = cv.HoughLines(edges, 1, np.pi/180, houghThreshold)
+    lines_drawing = img_orig.copy()
+    final_angle_drawing = img_orig.copy()
 
     if lines is not None:
         origin = (edges.shape[1] / 2, edges.shape[0] / 2)
@@ -40,23 +44,35 @@ def do_hough_image(img_orig, cannyThreshold1, cannyThreshold2, houghThreshold):
         distances_to_origin_norm = [np.interp(x, [min_dist, max_dist], [1.0,0.01]) for x in distances_to_origin]
 
         for (dist, (start, end)) in zip(distances_to_origin_norm, start_ends):
+            # Color lines based on distance from origin
             color = int(dist * 255)
-            cv.line(drawing, start, end, (255 - color, 0, color), 1)
+            cv.line(lines_drawing, start, end, (255 - color, 0, color), 1)
 
         # Get list of just thetas
-        thetas = lines[:,:,1].reshape((-1)) + np.pi * 2
-        avg_theta = np.average(thetas, weights=distances_to_origin_norm)
+        thetas = lines[:,:,1].reshape((-1))
+
+        # Modular averaging (cite this!)
+        # https://stackoverflow.com/questions/491738/how-do-you-calculate-the-average-of-a-set-of-circular-data
+        avg_sin = np.dot(np.sin(thetas), distances_to_origin_norm)
+        avg_cos = np.dot(np.cos(thetas), distances_to_origin_norm)
+        avg_theta = np.arctan(avg_sin / avg_cos)
         # Rotate such that theta is an angle around the origin of the line, not perpendicular line
         avg_theta = (np.pi - avg_theta) % np.pi
 
-        # draw line from center of image
-        center = (int(drawing.shape[0] / 2), int(drawing.shape[1] / 2))
-        cv.circle(drawing, center, 5, (255, 255, 255), 1)
-        r = center[0]
-        dims = (int(r*np.sin(avg_theta)), int(r*np.cos(avg_theta)))
-        cv.line(drawing, center, (center[0] + dims[0], center[1] + dims[1]), (0, 255, 0), 1)
+        left_handed = do_lr_detection(edges)
+        if keys == ord("p"):
+            print(left_handed)
+        angle, flipped = do_angle_correction(avg_theta, left_handed)
 
-    return (img_orig, cv.cvtColor(edges, cv.COLOR_GRAY2BGR), drawing)
+        # draw line from center of image
+        center = (int(lines_drawing.shape[0] / 2), int(lines_drawing.shape[1] / 2))
+        cv.circle(lines_drawing, center, 5, (255, 255, 255), 1)
+        r = center[0]
+        dims = (int(r*np.sin(angle)), int(r*np.cos(angle)))
+        color = (0, 0, 255) if flipped else (0, 255, 0)
+        cv.line(final_angle_drawing, center, (center[0] + dims[0], center[1] + dims[1]), color, 2)
+
+    return (img_orig, gray(edges), lines_drawing, final_angle_drawing)
 
 
 def main_hough():
@@ -66,30 +82,10 @@ def main_hough():
         ("hough_thresh", 10, 200)
     ]
 
-    control_detect_test("Hough lines", trackbar_info, "data/transformed1.png", do_hough_image, control_indices=[3])
+    #  control_detect_test_static("data/transformed1.png", do_hough_image, "Hough lines", trackbar_info, control_indices=None)
+    control_detect_test_video(do_hough_image, "Hough lines", trackbar_info, control_indices=range(10), draw_ref_img=True)
 
-def main_erosion():
-    img = cv.imread("single_knob.png")
-    img_gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-
-    cv.namedWindow('erosion angle')
-    cv.createTrackbar('adaptive C', 'erosion angle', 0, 255, lambda x: None)
-
-    while True:
-        thresh_c = cv.getTrackbarPos('adaptive C', 'erosion angle')
-        blurred = cv.GaussianBlur(img_gray, (7, 7), 0)
-        ret, thresh = cv.threshold(blurred, thresh_c, 255, cv.THRESH_BINARY)
-        #  thresh = cv.adaptiveThreshold(blurred
-        combined = np.concatenate((img_gray, blurred, thresh), axis=1)
-        cv.imshow('erosion angle', combined)
-        if cv.waitKey(1000) & 0xFF == ord('q'):
-            cv.destroyAllWindows()
-            break
-
-def edge_morph(img_orig, cannyThreshold1, cannyThreshold2):
-    """ Cant get thresholds right """
-    img = cv.cvtColor(img_orig, cv.COLOR_BGR2GRAY)
-
+def get_sorted_contours(img, cannyThreshold1, cannyThreshold2):
     morph_kernel = np.ones((3, 3), np.uint8)
 
     edges = cv.Canny(img, cannyThreshold1, cannyThreshold2)
@@ -98,25 +94,38 @@ def edge_morph(img_orig, cannyThreshold1, cannyThreshold2):
     contours, _hierarchy = cv.findContours(morphed, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
     contours = sorted(contours, key=lambda x: cv.contourArea(x), reverse=True)
 
+    return edges, morphed, contours
+
+def do_edge_morph(img_orig, keys, cannyThreshold1, cannyThreshold2):
+    """ Cant get thresholds right """
+    img = cv.cvtColor(img_orig, cv.COLOR_BGR2GRAY)
+
+    morph_kernel = np.ones((3, 3), np.uint8)
+
     contour_drawing = img_orig.copy()
     box = img_orig.copy()
+
+    edges, morphed, contours = get_sorted_contours(img, cannyThreshold1, cannyThreshold2)
+
+    if keys == ord("p"):
+        print(do_lr_detection(morphed))
+
     if len(contours) > 0:
-        largest = contours[0]
-        cv.drawContours(contour_drawing, contours, 0, (0, 255, 0), 1)
-        [vx, vy, x, y] = cv.fitLine(largest, cv.DIST_L2, 0, 0.1, 0.1)
+        cv.drawContours(contour_drawing, contours, 0, (255, 0, 0), 1)
+        [vx, vy, x, y] = cv.fitLine(contours[0], cv.DIST_L2, 0, 0.1, 0.1)
         cols = img.shape[1]
         l = int((-x*vy/vx) + y)
         r = int(((cols-x)*vy/vx)+y)
         cv.line(box, (cols-1, r), (0, l), (0, 255, 0), 1)
 
-    return (img_orig, cv.cvtColor(edges, cv.COLOR_GRAY2BGR), cv.cvtColor(morphed, cv.COLOR_GRAY2BGR), contour_drawing, box)
+    return (img_orig, gray(edges), gray(morphed), contour_drawing, box)
 
 def main_edge_morph():
     trackbar_info = [
         ("canny_thresh_1", 59, 255),
         ("canny_thresh_2", 144, 255)
     ]
-    control_detect_test("edge morph", trackbar_info, "data/transformed2.png", edge_morph)
+    control_detect_test_static("data/transformed2.png", do_edge_morph, "edge morph", trackbar_info)
 
 def do_hough_p_image():
     pass
@@ -128,7 +137,39 @@ def main_hough_p():
         ("HoughThreshold", 10, 200)
     )
 
-    control_detect_test("probabilistic hough lines", trackbar_info, "data/transformed2.png", do_hough_p_image)
+    control_detect_test_static("data/transformed2.png", do_hough_p_images, "probabilistic hough lines", trackbar_info)
+
+# Returns True if right handed, False if left handed
+def do_lr_detection(edges):
+    center_x = edges.shape[1] // 2
+    left = np.sum(edges[:, :center_x])
+    right = np.sum(edges[:, center_x:])
+
+    return left > right
+
+# assumes angle between 0 and pi
+def do_angle_correction(angle, left_handed):
+    delim_1 = 1 * np.pi / 4 - 0.4
+    delim_4 = 7 * np.pi / 4 + 0.4
+    delim_2 = delim_4 - np.pi
+    delim_3 = delim_1 + np.pi
+    flipped = False
+
+    if angle <= delim_1 or angle >= delim_4:
+        # always flip if in bottom quadrant
+        angle += np.pi
+        flipped = True
+    elif angle >= delim_1 and angle <= delim_2 and left_handed:
+        # if right handed but angle is in left quadrant
+        angle += np.pi
+        flipped = True
+    elif angle >= delim_3 and angle <= delim_4 and not left_handed:
+        # if left handed but angle is in right quadrant
+        angle += np.pi
+        flipped = True
+
+    return angle % (2 * np.pi), flipped
+
 
 main_hough()
 #  main_erosion()

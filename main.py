@@ -19,4 +19,4 @@ def main_callback(frame, key, mouse_x, mouse_y):
     frame = cv.resize(frame, (int(frame.shape[1]*0.5), int(frame.shape[0]*0.5)));
     cv.imshow(MOUSE_WINDOW_NAME, frame)
 
-run_camera_loop(1280, 720, "camera_matrix_720.npy", "distortion_coeff_720.npy", MOUSE_WINDOW_NAME, main_callback)
+run_camera_loop(1280, 720, "data/camera_matrix_720.npy", "data/distortion_coeff_720.npy", MOUSE_WINDOW_NAME, main_callback)
