@@ -14,24 +14,28 @@ MOUSE_WINDOW_NAME	main.py	/^MOUSE_WINDOW_NAME = 'main'$/;"	v
 PANEL_H	transform_color_mark.py	/^PANEL_H = 490$/;"	v
 PANEL_W	transform_color_mark.py	/^PANEL_W = 1650$/;"	v
 centroid	transform_color_mark.py	/^def centroid(contour):$/;"	f
+control_detect_test	util.py	/^def control_detect_test(win_name, trackbar_data, input_image_name, test_function):$/;"	f
 cv	control_picker.py	/^import cv2 as cv$/;"	I
 cv	knob_detect_test.py	/^import cv2 as cv$/;"	I
 cv	main.py	/^import cv2 as cv$/;"	I
 cv	transform_color_mark.py	/^import cv2 as cv$/;"	I
 cv	util.py	/^import cv2 as cv$/;"	I
-do_hough_image	knob_detect_test.py	/^def do_hough_image(filename, cannyThreshold1, cannyThreshold2, houghThreshold):$/;"	f
+distance_to_point	knob_detect_test.py	/^def distance_to_point(start, end, point):$/;"	f
+do_hough_image	knob_detect_test.py	/^def do_hough_image(img, cannyThreshold1, cannyThreshold2, houghThreshold):$/;"	f
 do_hough_p_image	knob_detect_test.py	/^def do_hough_p_image():$/;"	f
 draw_resized	transform_color_mark.py	/^def draw_resized(img, name, scale):$/;"	f
 edge_morph	knob_detect_test.py	/^def edge_morph(filename, cannyThreshold1, cannyThreshold2):$/;"	f
+get_control_positions	util.py	/^def get_control_positions():$/;"	f
 get_quad_centroids	transform_color_mark.py	/^def get_quad_centroids(contours):$/;"	f
 get_quad_convex_hull	transform_color_mark.py	/^def get_quad_convex_hull(contours, contour_img):$/;"	f
 get_start_end	knob_detect_test.py	/^def get_start_end(rho, theta):$/;"	f
-main_callback	control_picker.py	/^def main_callback(frame, key, mouse_x, mouse_y):$/;"	f
+main	control_picker.py	/^def main():$/;"	f
 main_callback	main.py	/^def main_callback(frame, key, mouse_x, mouse_y):$/;"	f
 main_edge_morph	knob_detect_test.py	/^def main_edge_morph():$/;"	f
 main_erosion	knob_detect_test.py	/^def main_erosion():$/;"	f
 main_hough	knob_detect_test.py	/^def main_hough():$/;"	f
 main_hough_p	knob_detect_test.py	/^def main_hough_p():$/;"	f
+mouse_callback	control_picker.py	/^    def mouse_callback(event, x, y, flags, param):$/;"	f	function:main	file:
 mouse_callback	util.py	/^    def mouse_callback(event, x, y, flags, param):$/;"	f	function:run_camera_loop	file:
 nothing	knob_detect_test.py	/^nothing = lambda x: None$/;"	f
 np	control_picker.py	/^import numpy as np$/;"	I
@@ -39,6 +43,8 @@ np	knob_detect_test.py	/^import numpy as np$/;"	I
 np	main.py	/^import numpy as np$/;"	I
 np	transform_color_mark.py	/^import numpy as np$/;"	I
 np	util.py	/^import numpy as np$/;"	I
+pad	knob_detect_test.py	/^def pad(img, width=150, height=150):$/;"	f
 reshuffle_hull	transform_color_mark.py	/^def reshuffle_hull(hull_quad):$/;"	f
 run_camera_loop	util.py	/^def run_camera_loop(cam_w, cam_h, camera_matrix_file, distortion_coeff_file, mouse_window_name, /;"	f
+sub_image	util.py	/^def sub_image(img, rect):$/;"	f
 transform	transform_color_mark.py	/^def transform(frame, draw_debug=False, debug_scale=0.5):$/;"	f

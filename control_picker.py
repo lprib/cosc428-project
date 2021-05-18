@@ -3,7 +3,7 @@ import cv2 as cv
 from util import run_camera_loop
 
 def main():
-    img = cv.imread("transformed2.png", -1)
+    img = cv.imread("data/transformed2.png", -1)
     boxes = []
     current_start = (0, 0)
 
@@ -33,9 +33,9 @@ def main():
 
         cv.imshow("main", drawing)
 
-    with open("knobs.csv", "w") as csv_file:
+    with open("data/knobs.csv", "w") as csv_file:
         csv_file.write("x1,y1,x2,y2\n")
         for box in boxes:
-            csv_file.write(f"{box[0][0]},{box[1][1]},{box[1][1]},{box[1][1]}\n")
+            csv_file.write(f"{box[0][0]},{box[0][1]},{box[1][0]},{box[1][1]}\n")
 
 main()
