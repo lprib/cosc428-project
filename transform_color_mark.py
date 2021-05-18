@@ -6,7 +6,7 @@ HUE_ROTATION = 15
 MARKER_THRESH_LOW = ((165 + HUE_ROTATION) % 180, 128, 50)
 MARKER_THRESH_HIGH = ((11 + HUE_ROTATION) % 180, 255, 255)
 
-MORPH_KERNEL = np.ones((5, 5), dtype=np.uint8)
+MORPH_KERNEL = np.ones((7, 7), dtype=np.uint8)
 
 PANEL_W = 1650
 PANEL_H = 490
@@ -79,8 +79,9 @@ def transform(frame, draw_debug=False, debug_scale=0.5):
     # Blur and morph open to remove noise
     thresh_img = cv.blur(thresh_img, (5, 5))
     # NOTE for report: the dilation fucks it up
-    #  thresh_img = cv.morphologyEx(thresh_img, cv.MORPH_ERODE, MORPH_KERNEL, iterations=2)
-    thresh_img = cv.morphologyEx(thresh_img, cv.MORPH_DILATE, MORPH_KERNEL, iterations=3)
+    #  thresh_img = cv.morphologyEx(thresh_img, cv.MORPH_ERODE, MORPH_KERNEL, iterations=1)
+    thresh_img = cv.morphologyEx(thresh_img, cv.MORPH_DILATE, MORPH_KERNEL, iterations=5)
+    #  thresh_img = cv.morphologyEx(thresh_img, cv.MORPH_OPEN, MORPH_KERNEL, iterations=3)
 
     contours, hierarchy = cv.findContours(thresh_img, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
