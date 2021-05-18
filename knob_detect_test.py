@@ -135,6 +135,35 @@ def main_edge_morph():
             cv.destroyAllWindows()
             break
 
+def do_hough_p_image():
+    pass
+
+def main_hough_p():
+    cv.namedWindow('Probabilistic Hough Line Transform')
+    cv.createTrackbar('CannyThreshold1', 'Probabilistic Hough Line Transform', 59, 255, nothing)
+    cv.createTrackbar('CannyThreshold2', 'Probabilistic Hough Line Transform', 144, 255, nothing)
+    cv.createTrackbar("HoughThreshold", 'Probabilistic Hough Line Transform', 10, 200, nothing)
+
+    while True:
+        cannyThreshold1 = cv.getTrackbarPos('CannyThreshold1', 'Probabilistic Hough Line Transform')
+        cannyThreshold2 = cv.getTrackbarPos('CannyThreshold2', 'Probabilistic Hough Line Transform')
+        houghThreshold = cv.getTrackbarPos('HoughThreshold', 'Probabilistic Hough Line Transform')
+
+        combined = np.concatenate((
+            do_hough_p_image("single_knob000.png", cannyThreshold1, cannyThreshold2, houghThreshold),
+            do_hough_p_image("single_knob001.png", cannyThreshold1, cannyThreshold2, houghThreshold),
+            do_hough_p_image("single_knob002.png", cannyThreshold1, cannyThreshold2, houghThreshold),
+            do_hough_p_image("single_knob003.png", cannyThreshold1, cannyThreshold2, houghThreshold)),
+            axis=0
+        )
+
+        #  print(lines.shape)
+        cv.imshow('Probabilistic Hough Line Transform', combined)
+
+        if cv.waitKey(1000) & 0xFF == ord('q'):
+            cv.destroyAllWindows()
+            break
+
 
 main_hough()
 #main_erosion()

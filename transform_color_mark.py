@@ -64,7 +64,11 @@ def get_quad_centroids(contours):
     else:
         return reshuffle_hull(hull_quad)
 
-def transform(frame, draw_debug=False):
+def draw_resized(img, name, scale):
+    resized_img = cv.resize(img, (int(img.shape[1]*scale), int(img.shape[0]*scale)))
+    cv.imshow(name, resized_img)
+
+def transform(frame, draw_debug=False, debug_scale=0.5):
     frame_hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
     # Rotate hue values so it's possible to implement an inrange that wraps around to capture red
     frame_hsv[:,:,0] += HUE_ROTATION
@@ -83,7 +87,7 @@ def transform(frame, draw_debug=False):
     contour_img = np.zeros((thresh_img.shape[0], thresh_img.shape[1], 3))
     if draw_debug:
         cv.drawContours(contour_img, contours, -1, (255, 0, 0), 1)
-        cv.imshow("contour metadata", contour_img)
+        draw_resized(contour_img, "contour metadata", debug_scale)
 
     # There should be four contours (ie. the outline of the four colored squares)
     if len(contours) != 4:
@@ -97,7 +101,7 @@ def transform(frame, draw_debug=False):
 
     if draw_debug:
         cv.circle(contour_img, tuple(quad_points[0]), 10, (255, 255, 255))
-        cv.imshow("contour metadata", contour_img)
+        draw_resized(contour_img, "contour metadata", debug_scale)
     
     quad_points = np.float32(quad_points)
     

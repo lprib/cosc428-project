@@ -1,0 +1,35 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_OUTPUT_MODE	u-ctags	/u-ctags or e-ctags/
+!_TAG_PROGRAM_AUTHOR	Universal Ctags Team	//
+!_TAG_PROGRAM_NAME	Universal Ctags	/Derived from Exuberant Ctags/
+!_TAG_PROGRAM_URL	https://ctags.io/	/official site/
+!_TAG_PROGRAM_VERSION	0.0.0	//
+DP_EPSILON_COEFF	transform_color_mark.py	/^DP_EPSILON_COEFF = 0.01$/;"	v
+HUE_ROTATION	transform_color_mark.py	/^HUE_ROTATION = 15$/;"	v
+MARKER_THRESH_HIGH	transform_color_mark.py	/^MARKER_THRESH_HIGH = ((11 + HUE_ROTATION) % 180, 255, 255)$/;"	v
+MARKER_THRESH_LOW	transform_color_mark.py	/^MARKER_THRESH_LOW = ((165 + HUE_ROTATION) % 180, 128, 50)$/;"	v
+MORPH_KERNEL	transform_color_mark.py	/^MORPH_KERNEL = np.ones((5, 5), dtype=np.uint8)$/;"	v
+PANEL_H	transform_color_mark.py	/^PANEL_H = 490$/;"	v
+PANEL_W	transform_color_mark.py	/^PANEL_W = 1650$/;"	v
+centroid	transform_color_mark.py	/^def centroid(contour):$/;"	f
+cv	knob_detect_test.py	/^import cv2 as cv$/;"	I
+cv	main.py	/^import cv2 as cv$/;"	I
+cv	transform_color_mark.py	/^import cv2 as cv$/;"	I
+do_hough_image	knob_detect_test.py	/^def do_hough_image(filename, cannyThreshold1, cannyThreshold2, houghThreshold):$/;"	f
+do_hough_p_image	knob_detect_test.py	/^def do_hough_p_image():$/;"	f
+edge_morph	knob_detect_test.py	/^def edge_morph(filename, cannyThreshold1, cannyThreshold2):$/;"	f
+get_quad_centroids	transform_color_mark.py	/^def get_quad_centroids(contours):$/;"	f
+get_quad_convex_hull	transform_color_mark.py	/^def get_quad_convex_hull(contours, contour_img):$/;"	f
+get_start_end	knob_detect_test.py	/^def get_start_end(rho, theta):$/;"	f
+main	main.py	/^def main():$/;"	f
+main_edge_morph	knob_detect_test.py	/^def main_edge_morph():$/;"	f
+main_erosion	knob_detect_test.py	/^def main_erosion():$/;"	f
+main_hough	knob_detect_test.py	/^def main_hough():$/;"	f
+main_hough_p	knob_detect_test.py	/^def main_hough_p():$/;"	f
+nothing	knob_detect_test.py	/^nothing = lambda x: None$/;"	f
+np	knob_detect_test.py	/^import numpy as np$/;"	I
+np	main.py	/^import numpy as np$/;"	I
+np	transform_color_mark.py	/^import numpy as np$/;"	I
+reshuffle_hull	transform_color_mark.py	/^def reshuffle_hull(hull_quad):$/;"	f
+transform	transform_color_mark.py	/^def transform(frame, draw_debug=False):$/;"	f
