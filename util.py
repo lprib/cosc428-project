@@ -3,6 +3,22 @@ import cv2 as cv
 import csv
 from transform_color_mark import transform
 
+def gray(img):
+    return cv.cvtColor(img, cv.COLOR_GRAY2BGR)
+
+
+def distance_to_point(start, end, point):
+    """
+    return minimum distance between point defined by start=(x, y) and end=(x, y)
+    and a point defined by (x, y)
+    """
+    return np.abs(
+        (end[0] - start[0])*(start[1] - point[1]) - (start[0] - point[0])*(end[1] - start[1])
+    ) / np.sqrt(
+        (end[0] - start[0])*(end[0] - start[0]) + (end[1] - start[1])*(end[1] - start[1])
+    )
+
+
 def setup_camera(cam_w, cam_h, camera_matrix_file, distortion_coeff_file):
     cap = cv.VideoCapture(-1)
 
@@ -52,7 +68,9 @@ def run_camera_loop(cam_w, cam_h, camera_matrix_file, distortion_coeff_file, mou
 
         callback(frame, key, mouse_x, mouse_y)
 
+
 def get_control_positions():
+    """ returns list of (x1, y1, x2, y2) """
     controls = []
     with open("data/knobs.csv", newline="") as csv_file:
         reader = csv.reader(csv_file, delimiter=",")
@@ -61,36 +79,24 @@ def get_control_positions():
             controls.append(tuple(int(x) for x in row))
     return controls
 
+
 def sub_image(img, rect):
+    """ rect: (x1, y1, x2, y2) """
     return img[rect[1]:rect[3], rect[0]:rect[2]].copy()
+
 
 def pad_to_width(img, width):
     return cv.copyMakeBorder(img, 0, 0, 0, width - img.shape[1], cv.BORDER_CONSTANT, value=(0, 0, 0))
 
-def control_detect_test_static(input_image_name, *args, **kwargs):
-    main_img = cv.imread(input_image_name, -1)
-    control_detect_test(lambda: main_img, *args, **kwargs)
-
-def control_detect_test_video(*args, **kwargs):
-    cam_info = setup_camera(1280, 720, "data/camera_matrix_720.npy", "data/distortion_coeff_720.npy")
-
-    blank = np.zeros((490, 1650, 3), dtype=np.uint8)
-    def image_producer():
-        nonlocal blank, cam_info
-        frame = preprocess_frame(cam_info)
-        success, transformed = transform(frame, draw_debug=True, debug_scale=0.5)
-        return (transformed if success else blank), frame
-
-    control_detect_test(image_producer, *args, **kwargs)
-
 
 def control_detect_test(image_producer, test_function, win_name, trackbar_info, control_indices=None, draw_ref_img=False):
     """
+    image_producer: callback called once per frame do produce an image. must produce a tuple of (main_image, camera_image)
+        main_image will be used to get control sub-images from
+        camera_image will be drawn to a window if draw_ref_img is True (camera_image can be None)
+    test_function: takes (sub_image, keys, trackbar_data0, trackbar_data1, ...) and returns an array of images
     win_name: name of window
     trackbar_info: iterator of (trackbar_name, trackbar_value, trackbar_max_value)
-    input_image_name: filename of input (controls will be extracted)
-    test_function: takes (sub_image, trackbar_data0, trackbar_data1, ...) and returns an array of images
-        NOTE: the images should be equal width and height
     """
     cv.namedWindow(win_name)
 
@@ -105,8 +111,11 @@ def control_detect_test(image_producer, test_function, win_name, trackbar_info, 
     while True:
         main_img, cam_img = image_producer()
         if draw_ref_img:
-            cv.imshow("reference_image", main_img)
-            cv.imshow("camera_image", cam_img)
+            if main_img is not None:
+                cv.imshow("reference_image", main_img)
+            if cam_img is not None:
+                cam_resized = cv.resize(cam_img, (int(cam_img.shape[1]*0.5), int(cam_img.shape[0]*0.5)))
+                cv.imshow("camera_image", cam_resized)
 
         trackbar_data = tuple(cv.getTrackbarPos(name, win_name) for name, _, _ in trackbar_info)
 
@@ -135,4 +144,24 @@ def control_detect_test(image_producer, test_function, win_name, trackbar_info, 
 
         #  print(lines.shape)
         cv.imshow(win_name, combined)
+
+
+def control_detect_test_static(input_image_name, *args, **kwargs):
+    """ calls control_detect_tests, but with image_producer set to read from file, all other args identical"""
+    main_img = cv.imread(input_image_name, -1)
+    control_detect_test(lambda: main_img, *args, **kwargs)
+
+
+def control_detect_test_video(*args, **kwargs):
+    """ calls control_detect_tests, but with image_producer set to read from webcam, all other args identical"""
+    cam_info = setup_camera(1280, 720, "data/camera_matrix_720.npy", "data/distortion_coeff_720.npy")
+
+    blank = np.zeros((490, 1650, 3), dtype=np.uint8)
+    def image_producer():
+        nonlocal blank, cam_info
+        frame = preprocess_frame(cam_info)
+        success, transformed = transform(frame, draw_debug=True, debug_scale=0.5)
+        return (transformed if success else blank), frame
+
+    control_detect_test(image_producer, *args, **kwargs)
 
