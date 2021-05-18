@@ -49,7 +49,7 @@ def centroid(contour):
     cx = int(moments["m10"] / moments["m00"])
     cy = int(moments["m01"] / moments["m00"])
     return [cx, cy]
-    
+
 def get_quad_centroids(contours):
     centroids = []
     for c in contours:
@@ -102,9 +102,9 @@ def transform(frame, draw_debug=False, debug_scale=0.5):
     if draw_debug:
         cv.circle(contour_img, tuple(quad_points[0]), 10, (255, 255, 255))
         draw_resized(contour_img, "contour metadata", debug_scale)
-    
+
     quad_points = np.float32(quad_points)
-    
+
     transform = cv.getPerspectiveTransform(quad_points, np.float32([[0, 0], [PANEL_W, 0], [PANEL_W, PANEL_H], [0, PANEL_H]]))
     warped = cv.warpPerspective(frame, transform, (PANEL_W, PANEL_H))
     return True, warped
