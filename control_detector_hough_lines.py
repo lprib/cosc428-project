@@ -36,7 +36,7 @@ def do_hough_image(img_orig, keys, cannyThreshold1, cannyThreshold2, houghThresh
         distances_to_origin_norm = [np.interp(x, [min_dist, max_dist], [1.0,0.01]) for x in distances_to_origin]
         distances_to_origin_norm = np.power(distances_to_origin_norm, distance_power)
 
-        for (dist, (start, end)) in zip(distances_to_origin_norm, start_ends):
+        for (dist, (start, end)) in reversed(list(zip(distances_to_origin_norm, start_ends))):
             # Color lines based on distance from origin
             color = int(dist * 255)
             cv.line(lines_drawing, start, end, (255 - color, 0, color), 1)
@@ -74,5 +74,5 @@ def main_hough():
     #  control_detect_test_video(do_hough_image, "Hough lines", trackbar_info, control_indices=range(10), draw_ref_img=True)
     control_detect_test_video(do_hough_image, "Hough lines", trackbar_info, control_indices=None, draw_ref_img=True)
 
-
-main_hough()
+if __name__ == "__main__":
+    main_hough()

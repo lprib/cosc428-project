@@ -64,48 +64,44 @@ def get_quad_centroids(contours):
     else:
         return reshuffle_hull(hull_quad)
 
-def draw_resized(img, name, scale):
-    resized_img = cv.resize(img, (int(img.shape[1]*scale), int(img.shape[0]*scale)))
-    cv.imshow(name, resized_img)
 
-def transform(frame, draw_debug=False, debug_scale=0.5):
+def transform(frame, draw_debug=False):
     frame_hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
     # Rotate hue values so it's possible to implement an inrange that wraps around to capture red
     frame_hsv[:,:,0] += HUE_ROTATION
     frame_hsv[:,:,0] %= 180
     # Mask any pixels that are within range of colored squares
-    thresh_img = cv.inRange(frame_hsv, MARKER_THRESH_LOW, MARKER_THRESH_HIGH)
+    thresh_img_orig = cv.inRange(frame_hsv, MARKER_THRESH_LOW, MARKER_THRESH_HIGH)
 
     # Blur and morph open to remove noise
-    thresh_img = cv.blur(thresh_img, (5, 5))
+    thresh_img = cv.blur(thresh_img_orig, (5, 5))
     # NOTE for report: the dilation fucks it up
     #  thresh_img = cv.morphologyEx(thresh_img, cv.MORPH_ERODE, MORPH_KERNEL, iterations=1)
-    thresh_img = cv.morphologyEx(thresh_img, cv.MORPH_DILATE, MORPH_KERNEL, iterations=5)
-    #  thresh_img = cv.morphologyEx(thresh_img, cv.MORPH_OPEN, MORPH_KERNEL, iterations=3)
+    #  thresh_img = cv.morphologyEx(thresh_img, cv.MORPH_DILATE, MORPH_KERNEL, iterations=5)
+    thresh_img = cv.morphologyEx(thresh_img, cv.MORPH_OPEN, MORPH_KERNEL, iterations=3)
 
     contours, hierarchy = cv.findContours(thresh_img, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
-    contour_img = np.zeros((thresh_img.shape[0], thresh_img.shape[1], 3))
+    contour_img = frame.copy()
     if draw_debug:
-        cv.drawContours(contour_img, contours, -1, (255, 0, 0), 1)
-        draw_resized(contour_img, "contour metadata", debug_scale)
+        cv.drawContours(contour_img, contours, -1, (255, 0, 0), 2)
 
     # There should be four contours (ie. the outline of the four colored squares)
     if len(contours) != 4:
-        return False, None
+        return False, None, contour_img, thresh_img_orig
 
     #  quad_points = get_quad_convex_hull(contours, contour_img)
     quad_points = get_quad_centroids(contours)
     # Error if not a quad
     if quad_points is None:
-        return False, None
+        return False, None, contour_img, thresh_img_orig
 
     if draw_debug:
-        cv.circle(contour_img, tuple(quad_points[0]), 10, (255, 255, 255))
-        draw_resized(contour_img, "contour metadata", debug_scale)
+        for point in quad_points:
+            cv.circle(contour_img, tuple(point), 5, (0, 255, 0), 2)
 
     quad_points = np.float32(quad_points)
 
     transform = cv.getPerspectiveTransform(quad_points, np.float32([[0, 0], [PANEL_W, 0], [PANEL_W, PANEL_H], [0, PANEL_H]]))
     warped = cv.warpPerspective(frame, transform, (PANEL_W, PANEL_H))
-    return True, warped
+    return True, warped, contour_img, thresh_img_orig

@@ -1,18 +1,21 @@
 import numpy as np
 import cv2 as cv
 from transform_color_mark import transform
-from util import run_camera_loop
+from util import run_camera_loop, draw_resized
 
 MOUSE_WINDOW_NAME = 'main'
 
 def main_callback(frame, key, mouse_x, mouse_y):
-    success, transformed = transform(frame, draw_debug=True, debug_scale=0.5)
+    success, transformed, contour_img, thresh_img = transform(frame, draw_debug=True)
     if success:
         cv.imshow('transformed', transformed)
+    draw_resized(contour_img, "contours", 0.5)
 
     if key == ord('c'):
         cv.imwrite("transformed.png", transformed)
         print("wrote to file")
+    if key == ord('o'):
+        cv.imwrite("camera.png", frame)
     if key == ord('m'):
         print(mouse_x, mouse_y)
 

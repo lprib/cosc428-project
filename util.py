@@ -80,6 +80,11 @@ def get_control_positions():
     return controls
 
 
+def draw_resized(img, name, scale):
+    resized_img = cv.resize(img, (int(img.shape[1]*scale), int(img.shape[0]*scale)))
+    cv.imshow(name, resized_img)
+
+
 def sub_image(img, rect):
     """ rect: (x1, y1, x2, y2) """
     return img[rect[1]:rect[3], rect[0]:rect[2]].copy()
