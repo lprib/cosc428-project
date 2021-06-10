@@ -73,16 +73,30 @@ def hough_shim(*args, **kwargs):
 
 def main_hough():
     trackbar_info = [
-        ("canny_thresh_1", 59, 255),
-        ("canny_thresh_2", 144, 255),
-        ("hough_thresh", 10, 200),
-        ("distance_power", 3, 30)
+        # ("canny_thresh_1", 59, 255),
+        # ("canny_thresh_2", 144, 255),
+        # ("hough_thresh", 10, 200),
+        # ("distance_power", 3, 30)
+        ("canny_thresh_1", 164, 255),
+        ("canny_thresh_2", 204, 255),
+        ("hough_thresh", 14, 200),
+        ("distance_power", 4, 30)
     ]
 
     #  control_detect_test_static("data/transformed1.png", do_hough_image, "Hough lines", trackbar_info, control_indices=None)
     #  control_detect_test_video(do_hough_image, "Hough lines", trackbar_info, control_indices=range(10), draw_ref_img=True)
-    control_detect_test_video(
-        hough_shim, "Hough lines", trackbar_info, control_indices=None, draw_ref_img=True)
+    # control_detect_test_video(
+    # hough_shim, "Hough lines", trackbar_info, control_indices=None, draw_ref_img=True, write_to_video=True)
+    control_detect_test_recorded_video(
+        "./data/camera_moving.avi",
+        hough_shim,
+        "Hough lines",
+        trackbar_info,
+        control_indices=None,
+        draw_ref_img=True,
+        write_to_video=False,
+        draw_trackbars=False
+    )
 
 
 if __name__ == "__main__":

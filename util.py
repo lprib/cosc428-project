@@ -76,10 +76,10 @@ def run_camera_loop(cam_w, cam_h, camera_matrix_file, distortion_coeff_file, mou
         callback(frame, key, mouse_x, mouse_y)
 
 
-def get_control_positions():
+def get_control_positions(csv_filename):
     """ returns list of (x1, y1, x2, y2) """
     controls = []
-    with open("data/knobs.csv", newline="") as csv_file:
+    with open(csv_filename, newline="") as csv_file:
         reader = csv.reader(csv_file, delimiter=",")
         _header = next(reader)
         for row in reader:
@@ -102,7 +102,16 @@ def pad_to_width(img, width):
     return cv.copyMakeBorder(img, 0, 0, 0, width - img.shape[1], cv.BORDER_CONSTANT, value=(0, 0, 0))
 
 
-def control_detect_test(image_producer, test_function, win_name, trackbar_info, control_indices=None, draw_ref_img=False, write_to_video=False):
+def control_detect_test(
+    image_producer,
+    test_function,
+    win_name,
+    trackbar_info,
+    control_indices=None,
+    draw_ref_img=False,
+    write_to_video=False,
+    draw_trackbars=True
+):
     """
     image_producer: callback called once per frame do produce an image. must produce a tuple of (main_image, camera_image)
         main_image will be used to get control sub-images from
@@ -110,28 +119,45 @@ def control_detect_test(image_producer, test_function, win_name, trackbar_info, 
     test_function: takes (sub_image, keys, trackbar_data0, trackbar_data1, ...) and returns an array of images
     win_name: name of window
     trackbar_info: iterator of (trackbar_name, trackbar_value, trackbar_max_value)
+    write_to_video: if true, the raw camera input will be written to ./data/camera.avi
     """
     cv.namedWindow(win_name)
 
-    for name, val, maxval in trackbar_info:
-        cv.createTrackbar(name, win_name, val, maxval, lambda x: None)
+    if draw_trackbars:
+        for name, val, maxval in trackbar_info:
+            cv.createTrackbar(name, win_name, val, maxval, lambda x: None)
 
-    controls = get_control_positions()
+    controls = get_control_positions("data/knobs_less.csv")
     if control_indices is not None:
         controls = [c for i, c in enumerate(controls) if i in control_indices]
 
+    out = None
+
     while True:
         main_img, cam_img = image_producer()
+
+        if write_to_video:
+            if out is None:
+                fourcc = cv.VideoWriter_fourcc(*'MJPG')
+                out = cv.VideoWriter('./data/camera.avi',
+                                     fourcc, 20.0, (cam_img.shape[1], cam_img.shape[0]))
+            out.write(cam_img)
+
         if draw_ref_img:
             if main_img is not None:
-                cv.imshow("reference_image", main_img)
+                draw_resized(main_img, "transformed_reference_image", 0.6)
+                # cv.imshow("reference_image", main_img)
             if cam_img is not None:
                 cam_resized = cv.resize(
                     cam_img, (int(cam_img.shape[1]*0.5), int(cam_img.shape[0]*0.5)))
-                cv.imshow("camera_image", cam_resized)
+                # cv.imshow("camera_image", cam_resized)
 
-        trackbar_data = tuple(cv.getTrackbarPos(name, win_name)
-                              for name, _, _ in trackbar_info)
+        if draw_trackbars:
+            trackbar_data = tuple(cv.getTrackbarPos(name, win_name)
+                                  for name, _, _ in trackbar_info)
+        else:
+            trackbar_data = tuple(
+                default_val for _, default_val, _ in trackbar_info)
 
         keys = cv.waitKey(20) & 0xff
         if keys == ord('q'):
@@ -162,11 +188,36 @@ def control_detect_test(image_producer, test_function, win_name, trackbar_info, 
         #  print(lines.shape)
         cv.imshow(win_name, combined)
 
+    if write_to_video:
+        out.release()
+
 
 def control_detect_test_static(input_image_name, *args, **kwargs):
     """ calls control_detect_tests, but with image_producer set to read from file, all other args identical"""
     main_img = cv.imread(input_image_name, -1)
     control_detect_test(lambda: main_img, *args, **kwargs)
+
+
+def control_detect_test_recorded_video(video_file_name, *args, **kwargs):
+    cap = cv.VideoCapture(video_file_name)
+    transform_cache = np.zeros((490, 1650, 3), dtype=np.uint8)
+
+    def image_producer():
+        nonlocal cap, transform_cache
+        ret, frame = cap.read()
+
+        if not ret:
+            cap.set(cv.CAP_PROP_POS_FRAMES, 0)
+            ret, frame = cap.read()
+
+        success, transformed, contour_img, _ = transform(
+            frame, draw_debug=True)
+        draw_resized(contour_img, "contours", 0.5)
+        if success:
+            transform_cache = transformed
+        return transform_cache, frame
+
+    control_detect_test(image_producer, *args, **kwargs)
 
 
 def control_detect_test_video(*args, **kwargs):
@@ -187,3 +238,6 @@ def control_detect_test_video(*args, **kwargs):
         return transform_cache, frame
 
     control_detect_test(image_producer, *args, **kwargs)
+
+    # cam_info[0] is the VideoCapture object
+    cam_info[0].release()

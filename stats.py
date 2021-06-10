@@ -8,7 +8,7 @@ from util import *
 def do_stat_test(distance_power):
     angles = []
 
-    control = get_control_positions()[1]
+    control = get_control_positions("data/knobs_more.csv")[1]
 
     def main_callback(frame, key, mouse_x, mouse_y):
         nonlocal angles

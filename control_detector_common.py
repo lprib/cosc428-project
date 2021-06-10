@@ -1,6 +1,11 @@
 import cv2 as cv
 import numpy as np
 
+DELIM_1 = 1 * np.pi / 4 - 0.4
+DELIM_4 = 7 * np.pi / 4 + 0.4
+DELIM_2 = DELIM_4 - np.pi
+DELIM_3 = DELIM_1 + np.pi
+
 
 # Returns True if right handed, False if left handed
 def do_lr_detection(edges):
@@ -13,21 +18,17 @@ def do_lr_detection(edges):
 
 # assumes angle between 0 and pi
 def do_angle_correction(angle, left_handed):
-    delim_1 = 1 * np.pi / 4 - 0.4
-    delim_4 = 7 * np.pi / 4 + 0.4
-    delim_2 = delim_4 - np.pi
-    delim_3 = delim_1 + np.pi
     flipped = False
 
-    if angle <= delim_1 or angle >= delim_4:
+    if angle <= DELIM_1 or angle >= DELIM_4:
         # always flip if in bottom quadrant
         angle += np.pi
         flipped = True
-    elif angle >= delim_1 and angle <= delim_2 and left_handed:
+    elif angle >= DELIM_1 and angle <= DELIM_2 and left_handed:
         # if right handed but angle is in left quadrant
         angle += np.pi
         flipped = True
-    elif angle >= delim_3 and angle <= delim_4 and not left_handed:
+    elif angle >= DELIM_3 and angle <= DELIM_4 and not left_handed:
         # if left handed but angle is in right quadrant
         angle += np.pi
         flipped = True

@@ -18,7 +18,7 @@ ret, thresh = cv.threshold(thresh, 10, 255, cv.THRESH_BINARY)
 cv.imwrite("outputs/thresh.png", thresh)
 cv.imwrite("outputs/transformed.png", transformed)
 
-control = get_control_positions()[1]
+control = get_control_positions("data/knobs_less.csv")[1]
 control_img = sub_image(transformed, control)
 
 images = do_hough_image(control_img, -1, 49, 144, 10, 10)
