@@ -1,3 +1,4 @@
+import sys
 import cv2 as cv
 import numpy as np
 from util import *
@@ -87,8 +88,13 @@ def main_hough():
     #  control_detect_test_video(do_hough_image, "Hough lines", trackbar_info, control_indices=range(10), draw_ref_img=True)
     # control_detect_test_video(
     # hough_shim, "Hough lines", trackbar_info, control_indices=None, draw_ref_img=True, write_to_video=True)
+    if len(sys.argv) > 1 and sys.argv[1] == "moving":
+        video = "./data/camera_moving.avi"
+    else:
+        video = "./data/camera_good.avi"
+
     control_detect_test_recorded_video(
-        "./data/camera_moving.avi",
+        video,
         hough_shim,
         "Hough lines",
         trackbar_info,
