@@ -6,22 +6,25 @@ HUE_ROTATION = 15
 MARKER_THRESH_LOW = ((165 + HUE_ROTATION) % 180, 128, 50)
 MARKER_THRESH_HIGH = ((11 + HUE_ROTATION) % 180, 255, 255)
 
-MORPH_KERNEL = np.ones((7, 7), dtype=np.uint8)
+MORPH_KERNEL = np.ones((5, 5), dtype=np.uint8)
 
 PANEL_W = 1650
 PANEL_H = 490
 
 DP_EPSILON_COEFF = 0.01
 
+
 def reshuffle_hull(hull_quad):
     """ Reshuffle such that the top left point is the 0th point in a hull, and resize to a (4, 2) array """
     hull_points = hull_quad.reshape((4, 2))
 
     # Find the point that is closest to the top left (0, 0)
-    topleft_index = min(range(len(hull_points)), key=lambda x: hull_points[x, 0]**2 + hull_points[x, 1]**2)
+    topleft_index = min(range(len(hull_points)),
+                        key=lambda x: hull_points[x, 0]**2 + hull_points[x, 1]**2)
     # left shift the array such that the top-left point is at index 0
     hull_points = np.roll(hull_points, -topleft_index, axis=0)
     return hull_points
+
 
 def get_quad_convex_hull(contours, contour_img):
     """ return a single bounding quad given a bunch of countours of color mark outlines"""
@@ -41,6 +44,7 @@ def get_quad_convex_hull(contours, contour_img):
         return None
     return reshuffle_hull(hull_quad)
 
+
 def centroid(contour):
     moments = cv.moments(contour)
     # prevent div by zero
@@ -49,6 +53,7 @@ def centroid(contour):
     cx = int(moments["m10"] / moments["m00"])
     cy = int(moments["m01"] / moments["m00"])
     return [cx, cy]
+
 
 def get_quad_centroids(contours):
     centroids = []
@@ -68,19 +73,22 @@ def get_quad_centroids(contours):
 def transform(frame, draw_debug=False):
     frame_hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
     # Rotate hue values so it's possible to implement an inrange that wraps around to capture red
-    frame_hsv[:,:,0] += HUE_ROTATION
-    frame_hsv[:,:,0] %= 180
+    frame_hsv[:, :, 0] += HUE_ROTATION
+    frame_hsv[:, :, 0] %= 180
     # Mask any pixels that are within range of colored squares
-    thresh_img_orig = cv.inRange(frame_hsv, MARKER_THRESH_LOW, MARKER_THRESH_HIGH)
+    thresh_img_orig = cv.inRange(
+        frame_hsv, MARKER_THRESH_LOW, MARKER_THRESH_HIGH)
 
     # Blur and morph open to remove noise
     thresh_img = cv.blur(thresh_img_orig, (5, 5))
     # NOTE for report: the dilation fucks it up
     #  thresh_img = cv.morphologyEx(thresh_img, cv.MORPH_ERODE, MORPH_KERNEL, iterations=1)
-    #  thresh_img = cv.morphologyEx(thresh_img, cv.MORPH_DILATE, MORPH_KERNEL, iterations=5)
+    thresh_img = cv.morphologyEx(
+        thresh_img, cv.MORPH_DILATE, MORPH_KERNEL, iterations=3)
     #  thresh_img = cv.morphologyEx(thresh_img, cv.MORPH_OPEN, MORPH_KERNEL, iterations=3)
 
-    contours, hierarchy = cv.findContours(thresh_img, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy = cv.findContours(
+        thresh_img, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
     contour_img = frame.copy()
     if draw_debug:
@@ -102,6 +110,7 @@ def transform(frame, draw_debug=False):
 
     quad_points = np.float32(quad_points)
 
-    transform = cv.getPerspectiveTransform(quad_points, np.float32([[0, 0], [PANEL_W, 0], [PANEL_W, PANEL_H], [0, PANEL_H]]))
+    transform = cv.getPerspectiveTransform(quad_points, np.float32(
+        [[0, 0], [PANEL_W, 0], [PANEL_W, PANEL_H], [0, PANEL_H]]))
     warped = cv.warpPerspective(frame, transform, (PANEL_W, PANEL_H))
     return True, warped, contour_img, thresh_img_orig

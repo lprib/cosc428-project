@@ -3,6 +3,7 @@ import cv2 as cv
 import csv
 from transform_color_mark import transform
 
+
 def gray(img):
     return cv.cvtColor(img, cv.COLOR_GRAY2BGR)
 
@@ -13,9 +14,11 @@ def distance_to_point(start, end, point):
     and a point defined by (x, y)
     """
     return np.abs(
-        (end[0] - start[0])*(start[1] - point[1]) - (start[0] - point[0])*(end[1] - start[1])
+        (end[0] - start[0])*(start[1] - point[1]) -
+        (start[0] - point[0])*(end[1] - start[1])
     ) / np.sqrt(
-        (end[0] - start[0])*(end[0] - start[0]) + (end[1] - start[1])*(end[1] - start[1])
+        (end[0] - start[0])*(end[0] - start[0]) +
+        (end[1] - start[1])*(end[1] - start[1])
     )
 
 
@@ -30,8 +33,10 @@ def setup_camera(cam_w, cam_h, camera_matrix_file, distortion_coeff_file):
 
     ret, frame = cap.read()
     h, w = frame.shape[:2]
-    new_camera_matrix, camera_crop_region = cv.getOptimalNewCameraMatrix(camera_matrix, distortion_coeff, (w,h), 1, (w,h))
-    mapx, mapy = cv.initUndistortRectifyMap(camera_matrix, distortion_coeff, None, new_camera_matrix, (w,h), cv.CV_16SC2)
+    new_camera_matrix, camera_crop_region = cv.getOptimalNewCameraMatrix(
+        camera_matrix, distortion_coeff, (w, h), 1, (w, h))
+    mapx, mapy = cv.initUndistortRectifyMap(
+        camera_matrix, distortion_coeff, None, new_camera_matrix, (w, h), cv.CV_16SC2)
 
     # return in the args format expected by cv.undistort
     return cap, camera_crop_region, (camera_matrix, distortion_coeff, None, new_camera_matrix)
@@ -47,9 +52,11 @@ def preprocess_frame(setup_camera_info):
 
 
 def run_camera_loop(cam_w, cam_h, camera_matrix_file, distortion_coeff_file, mouse_window_name, callback):
-    cam_info = setup_camera(cam_w, cam_h, camera_matrix_file, distortion_coeff_file)
+    cam_info = setup_camera(
+        cam_w, cam_h, camera_matrix_file, distortion_coeff_file)
 
     mouse_x, mouse_y = 0, 0
+
     def mouse_callback(event, x, y, flags, param):
         # Closure capture:
         nonlocal mouse_x
@@ -81,7 +88,8 @@ def get_control_positions():
 
 
 def draw_resized(img, name, scale):
-    resized_img = cv.resize(img, (int(img.shape[1]*scale), int(img.shape[0]*scale)))
+    resized_img = cv.resize(
+        img, (int(img.shape[1]*scale), int(img.shape[0]*scale)))
     cv.imshow(name, resized_img)
 
 
@@ -94,7 +102,7 @@ def pad_to_width(img, width):
     return cv.copyMakeBorder(img, 0, 0, 0, width - img.shape[1], cv.BORDER_CONSTANT, value=(0, 0, 0))
 
 
-def control_detect_test(image_producer, test_function, win_name, trackbar_info, control_indices=None, draw_ref_img=False):
+def control_detect_test(image_producer, test_function, win_name, trackbar_info, control_indices=None, draw_ref_img=False, write_to_video=False):
     """
     image_producer: callback called once per frame do produce an image. must produce a tuple of (main_image, camera_image)
         main_image will be used to get control sub-images from
@@ -107,11 +115,10 @@ def control_detect_test(image_producer, test_function, win_name, trackbar_info, 
 
     for name, val, maxval in trackbar_info:
         cv.createTrackbar(name, win_name, val, maxval, lambda x: None)
-    
+
     controls = get_control_positions()
     if control_indices is not None:
         controls = [c for i, c in enumerate(controls) if i in control_indices]
-
 
     while True:
         main_img, cam_img = image_producer()
@@ -119,10 +126,12 @@ def control_detect_test(image_producer, test_function, win_name, trackbar_info, 
             if main_img is not None:
                 cv.imshow("reference_image", main_img)
             if cam_img is not None:
-                cam_resized = cv.resize(cam_img, (int(cam_img.shape[1]*0.5), int(cam_img.shape[0]*0.5)))
+                cam_resized = cv.resize(
+                    cam_img, (int(cam_img.shape[1]*0.5), int(cam_img.shape[0]*0.5)))
                 cv.imshow("camera_image", cam_resized)
 
-        trackbar_data = tuple(cv.getTrackbarPos(name, win_name) for name, _, _ in trackbar_info)
+        trackbar_data = tuple(cv.getTrackbarPos(name, win_name)
+                              for name, _, _ in trackbar_info)
 
         keys = cv.waitKey(20) & 0xff
         if keys == ord('q'):
@@ -131,17 +140,20 @@ def control_detect_test(image_producer, test_function, win_name, trackbar_info, 
 
         # Get the test output for each controller test input
         # This will be an array of (array of image)
-        test_outputs = [test_function(sub_image(main_img, control_box), keys, *trackbar_data) for control_box in controls]
+        test_outputs = [test_function(sub_image(
+            main_img, control_box), keys, *trackbar_data) for control_box in controls]
 
         # get the max width of a column, for padding
         max_widths = [
-            max(test_outputs, key=lambda x: x[col_index].shape[1])[col_index].shape[1]
+            max(test_outputs, key=lambda x: x[col_index].shape[1])[
+                col_index].shape[1]
             for col_index in range(len(test_outputs[0]))
         ]
 
         # Pad columns and concatenate rows
         test_outputs_padded = [
-            np.concatenate([pad_to_width(img, max_widths[col_index]) for col_index, img in enumerate(test_output)], axis=1)
+            np.concatenate([pad_to_width(img, max_widths[col_index])
+                           for col_index, img in enumerate(test_output)], axis=1)
             for test_output in test_outputs
         ]
 
@@ -159,17 +171,19 @@ def control_detect_test_static(input_image_name, *args, **kwargs):
 
 def control_detect_test_video(*args, **kwargs):
     """ calls control_detect_tests, but with image_producer set to read from webcam, all other args identical"""
-    cam_info = setup_camera(1280, 720, "data/camera_matrix_720.npy", "data/distortion_coeff_720.npy")
+    cam_info = setup_camera(
+        1280, 720, "data/camera_matrix_720.npy", "data/distortion_coeff_720.npy")
 
     transform_cache = np.zeros((490, 1650, 3), dtype=np.uint8)
+
     def image_producer():
         nonlocal cam_info, transform_cache
         frame = preprocess_frame(cam_info)
-        success, transformed, contour_img, _ = transform(frame, draw_debug=True)
+        success, transformed, contour_img, _ = transform(
+            frame, draw_debug=True)
         draw_resized(contour_img, "contours", 0.7)
         if success:
             transform_cache = transformed
         return transform_cache, frame
 
     control_detect_test(image_producer, *args, **kwargs)
-

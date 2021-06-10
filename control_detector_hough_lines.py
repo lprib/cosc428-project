@@ -28,14 +28,17 @@ def do_hough_image(img_orig, keys, cannyThreshold1, cannyThreshold2, houghThresh
         origin = (edges.shape[1] / 2, edges.shape[0] / 2)
         start_ends = [get_start_end(rho, theta) for ((rho, theta),) in lines]
 
-        distances_to_origin = [distance_to_point(start, end, origin) for (start, end) in start_ends]
+        distances_to_origin = [distance_to_point(
+            start, end, origin) for (start, end) in start_ends]
         max_dist = max(distances_to_origin)
         min_dist = min(distances_to_origin)
 
         # Use 0.01 as the lower bound here to avoid div-by-zero if there is only a single line
         # If there is only one line and it is assigned a weight of 0, the weighted average will not work
-        distances_to_origin_norm = [np.interp(x, [min_dist, max_dist], [1.0,0.01]) for x in distances_to_origin]
-        distances_to_origin_norm = np.power(distances_to_origin_norm, distance_power)
+        distances_to_origin_norm = [
+            np.interp(x, [min_dist, max_dist], [1.0, 0.01]) for x in distances_to_origin]
+        distances_to_origin_norm = np.power(
+            distances_to_origin_norm, distance_power)
 
         for (dist, (start, end)) in reversed(list(zip(distances_to_origin_norm, start_ends))):
             # Color lines based on distance from origin
@@ -43,7 +46,7 @@ def do_hough_image(img_orig, keys, cannyThreshold1, cannyThreshold2, houghThresh
             cv.line(lines_drawing, start, end, (255 - color, 0, color), 1)
 
         # Get list of just thetas
-        thetas = lines[:,:,1].reshape((-1))
+        thetas = lines[:, :, 1].reshape((-1))
 
         # Modular averaging (cite this!)
         # https://stackoverflow.com/questions/491738/how-do-you-calculate-the-average-of-a-set-of-circular-data
@@ -78,7 +81,9 @@ def main_hough():
 
     #  control_detect_test_static("data/transformed1.png", do_hough_image, "Hough lines", trackbar_info, control_indices=None)
     #  control_detect_test_video(do_hough_image, "Hough lines", trackbar_info, control_indices=range(10), draw_ref_img=True)
-    control_detect_test_video(hough_shim, "Hough lines", trackbar_info, control_indices=None, draw_ref_img=True)
+    control_detect_test_video(
+        hough_shim, "Hough lines", trackbar_info, control_indices=None, draw_ref_img=True)
+
 
 if __name__ == "__main__":
     main_hough()

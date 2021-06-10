@@ -41,4 +41,5 @@ def draw_angle(drawing, angle, flipped):
     r = center[0]
     dims = (int(r*np.sin(angle)), int(r*np.cos(angle)))
     color = (0, 0, 255) if flipped else (0, 255, 0)
-    cv.line(drawing, center, (center[0] + dims[0], center[1] + dims[1]), color, 2)
+    cv.line(drawing, center, (center[0] +
+            dims[0], center[1] + dims[1]), color, 2)
