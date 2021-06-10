@@ -78,7 +78,7 @@ def transform(frame, draw_debug=False):
     # NOTE for report: the dilation fucks it up
     #  thresh_img = cv.morphologyEx(thresh_img, cv.MORPH_ERODE, MORPH_KERNEL, iterations=1)
     #  thresh_img = cv.morphologyEx(thresh_img, cv.MORPH_DILATE, MORPH_KERNEL, iterations=5)
-    thresh_img = cv.morphologyEx(thresh_img, cv.MORPH_OPEN, MORPH_KERNEL, iterations=3)
+    #  thresh_img = cv.morphologyEx(thresh_img, cv.MORPH_OPEN, MORPH_KERNEL, iterations=3)
 
     contours, hierarchy = cv.findContours(thresh_img, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 

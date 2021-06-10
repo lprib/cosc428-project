@@ -161,12 +161,15 @@ def control_detect_test_video(*args, **kwargs):
     """ calls control_detect_tests, but with image_producer set to read from webcam, all other args identical"""
     cam_info = setup_camera(1280, 720, "data/camera_matrix_720.npy", "data/distortion_coeff_720.npy")
 
-    blank = np.zeros((490, 1650, 3), dtype=np.uint8)
+    transform_cache = np.zeros((490, 1650, 3), dtype=np.uint8)
     def image_producer():
-        nonlocal blank, cam_info
+        nonlocal cam_info, transform_cache
         frame = preprocess_frame(cam_info)
-        success, transformed = transform(frame, draw_debug=True, debug_scale=0.5)
-        return (transformed if success else blank), frame
+        success, transformed, contour_img, _ = transform(frame, draw_debug=True)
+        draw_resized(contour_img, "contours", 0.7)
+        if success:
+            transform_cache = transformed
+        return transform_cache, frame
 
     control_detect_test(image_producer, *args, **kwargs)
 

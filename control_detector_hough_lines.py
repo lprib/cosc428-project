@@ -23,6 +23,7 @@ def do_hough_image(img_orig, keys, cannyThreshold1, cannyThreshold2, houghThresh
     lines_drawing = img_orig.copy()
     final_angle_drawing = img_orig.copy()
 
+    angle = None
     if lines is not None:
         origin = (edges.shape[1] / 2, edges.shape[0] / 2)
         start_ends = [get_start_end(rho, theta) for ((rho, theta),) in lines]
@@ -59,7 +60,12 @@ def do_hough_image(img_orig, keys, cannyThreshold1, cannyThreshold2, houghThresh
 
         draw_angle(final_angle_drawing, angle, flipped)
 
-    return (img_orig, gray(edges), lines_drawing, final_angle_drawing)
+    return (img_orig, gray(edges), lines_drawing, final_angle_drawing), angle
+
+
+# same as above function, but discard the angle
+def hough_shim(*args, **kwargs):
+    return do_hough_image(*args, **kwargs)[0]
 
 
 def main_hough():
@@ -72,7 +78,7 @@ def main_hough():
 
     #  control_detect_test_static("data/transformed1.png", do_hough_image, "Hough lines", trackbar_info, control_indices=None)
     #  control_detect_test_video(do_hough_image, "Hough lines", trackbar_info, control_indices=range(10), draw_ref_img=True)
-    control_detect_test_video(do_hough_image, "Hough lines", trackbar_info, control_indices=None, draw_ref_img=True)
+    control_detect_test_video(hough_shim, "Hough lines", trackbar_info, control_indices=None, draw_ref_img=True)
 
 if __name__ == "__main__":
     main_hough()
