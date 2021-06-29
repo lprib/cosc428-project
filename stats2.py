@@ -98,10 +98,12 @@ def error_histogram(samples, title):
 #  compute_all_samples()
 
 samples = read_sample_file("./outputs/samples_hough_power0_movecam.dat")
-error_histogram(samples, "power 0")
+error_histogram(samples, "hough power 0")
 samples = read_sample_file("./outputs/samples_hough_power3_movecam.dat")
-error_histogram(samples, "power 3")
+error_histogram(samples, "hough power 3")
 samples = read_sample_file("./outputs/samples_hough_power10_movecam.dat")
-error_histogram(samples, "power 10")
+error_histogram(samples, "hough power 10")
+samples = read_sample_file("./outputs/samples_contour_0_movecam.dat")
+error_histogram(samples, "contour")
 plt.show()
 
