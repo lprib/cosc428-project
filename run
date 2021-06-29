@@ -1,0 +1,5 @@
+#!/bin/bash
+
+python3 $1
+sleep 5
+i3-msg "[class='Python3'] floating enable"
