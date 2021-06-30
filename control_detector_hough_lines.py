@@ -6,6 +6,7 @@ from control_detector_common import *
 
 
 def get_start_end(rho, theta):
+    """ Convert the (rho, theta) Hough format into cartesion coordinates """
     a = np.cos(theta)
     b = np.sin(theta)
     x0 = a * rho
@@ -18,6 +19,7 @@ def get_start_end(rho, theta):
 
 
 def do_hough_image(img_orig, keys, cannyThreshold1, cannyThreshold2, houghThreshold, distance_power):
+    """ Gets (images_tuple, angle) from sub-img, given threshold and exponent parameters """
     img = cv.cvtColor(img_orig, cv.COLOR_BGR2GRAY)
     edges = cv.Canny(img, cannyThreshold1, cannyThreshold2)
     lines = cv.HoughLines(edges, 1, np.pi/180, houghThreshold)
@@ -49,8 +51,7 @@ def do_hough_image(img_orig, keys, cannyThreshold1, cannyThreshold2, houghThresh
         # Get list of just thetas
         thetas = lines[:, :, 1].reshape((-1))
 
-        # Modular averaging (cite this!)
-        # https://stackoverflow.com/questions/491738/how-do-you-calculate-the-average-of-a-set-of-circular-data
+        # Modular averaging
         avg_sin = np.dot(np.sin(thetas), distances_to_origin_norm)
         avg_cos = np.dot(np.cos(thetas), distances_to_origin_norm)
         avg_theta = np.arctan2(avg_sin, avg_cos)
@@ -77,10 +78,6 @@ def hough_shim(*args, **kwargs):
 
 def main_hough():
     trackbar_info = [
-        # ("canny_thresh_1", 59, 255),
-        # ("canny_thresh_2", 144, 255),
-        # ("hough_thresh", 10, 200),
-        # ("distance_power", 3, 30)
         ("canny_thresh_1", 164, 255),
         ("canny_thresh_2", 204, 255),
         ("hough_thresh", 14, 200),

@@ -1,13 +1,17 @@
 import numpy as np
 import cv2 as cv
 
+# offset to hue values to avoid wrap-around
 HUE_ROTATION = 15
 
+# hue thresholds (hue rotation is accounted for)
 MARKER_THRESH_LOW = ((165 + HUE_ROTATION) % 180, 40, 50)
 MARKER_THRESH_HIGH = ((11 + HUE_ROTATION) % 180, 255, 255)
 
+# morph close kernel
 MORPH_KERNEL = np.ones((5, 5), dtype=np.uint8)
 
+# w, h to perspective warp into
 PANEL_W = 1650
 PANEL_H = 490
 
@@ -46,6 +50,7 @@ def get_quad_convex_hull(contours, contour_img):
 
 
 def centroid(contour):
+    """ get contour centroid from moments """
     moments = cv.moments(contour)
     # prevent div by zero
     if moments["m00"] == 0.0:
@@ -56,6 +61,7 @@ def centroid(contour):
 
 
 def get_quad_centroids(contours):
+    """ get the centroids in correct order from contours, None if bad data """
     centroids = []
     for c in contours:
         cent = centroid(c)
@@ -71,6 +77,7 @@ def get_quad_centroids(contours):
 
 
 def transform(frame, draw_debug=False):
+    """ perspective transform frame """
     frame_hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
     # Rotate hue values so it's possible to implement an inrange that wraps around to capture red
     frame_hsv[:, :, 0] += HUE_ROTATION
@@ -81,7 +88,6 @@ def transform(frame, draw_debug=False):
 
     # Blur and morph open to remove noise
     thresh_img = cv.blur(thresh_img_orig, (5, 5))
-    # NOTE for report: the dilation fucks it up
     #  thresh_img = cv.morphologyEx(thresh_img, cv.MORPH_ERODE, MORPH_KERNEL, iterations=1)
     # thresh_img = cv.morphologyEx(
     # thresh_img, cv.MORPH_DILATE, MORPH_KERNEL, iterations=3)

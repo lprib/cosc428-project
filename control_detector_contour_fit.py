@@ -5,6 +5,7 @@ from control_detector_common import *
 
 
 def get_sorted_contours(img, cannyThreshold1, cannyThreshold2):
+    """ Get all contours from img using Canny, morph close, findcontours. sorted largest to smallest """
     morph_kernel = np.ones((3, 3), np.uint8)
 
     edges = cv.Canny(img, cannyThreshold1, cannyThreshold2)
@@ -19,7 +20,7 @@ def get_sorted_contours(img, cannyThreshold1, cannyThreshold2):
 
 
 def do_contour_fit(img_orig, keys, cannyThreshold1, cannyThreshold2):
-    """ Cant get thresholds right """
+    """ Perform contour linear regression angle detection. returns (images_tuple, angle) """
     img = cv.cvtColor(img_orig, cv.COLOR_BGR2GRAY)
 
     morph_kernel = np.ones((3, 3), np.uint8)
@@ -45,6 +46,7 @@ def do_contour_fit(img_orig, keys, cannyThreshold1, cannyThreshold2):
 
 
 def contour_fit_shim(*args, **kwargs):
+    """ Shim to discard angle output from do_contour_fit """
     return do_contour_fit(*args, **kwargs)[0]
 
 

@@ -5,6 +5,7 @@ from transform_color_mark import transform
 
 
 def gray(img):
+    """helper function to convert img to grayscale"""
     return cv.cvtColor(img, cv.COLOR_GRAY2BGR)
 
 
@@ -23,6 +24,7 @@ def distance_to_point(start, end, point):
 
 
 def setup_camera(cam_w, cam_h, camera_matrix_file, distortion_coeff_file):
+    """ Initialize a camera with specified w, h using matrix and distortion files"""
     cap = cv.VideoCapture(-1)
 
     cap.set(cv.CAP_PROP_FRAME_WIDTH, cam_w)
@@ -43,6 +45,7 @@ def setup_camera(cam_w, cam_h, camera_matrix_file, distortion_coeff_file):
 
 
 def preprocess_frame(setup_camera_info):
+    """ undistort and crop an image from the camera """
     cap, crop, distort_info = setup_camera_info
     ret, frame = cap.read()
     frame = cv.undistort(frame, *distort_info)
@@ -52,6 +55,7 @@ def preprocess_frame(setup_camera_info):
 
 
 def run_camera_loop(cam_w, cam_h, camera_matrix_file, distortion_coeff_file, mouse_window_name, callback):
+    """ Helper function to run a loop that produces a webcam frame each iteration. It will be given to callback """
     cam_info = setup_camera(
         cam_w, cam_h, camera_matrix_file, distortion_coeff_file)
 
@@ -77,7 +81,7 @@ def run_camera_loop(cam_w, cam_h, camera_matrix_file, distortion_coeff_file, mou
 
 
 def get_control_positions(csv_filename):
-    """ returns list of (x1, y1, x2, y2) """
+    """ returns list of (x1, y1, x2, y2) sum-image bounding boxes """
     controls = []
     with open(csv_filename, newline="") as csv_file:
         reader = csv.reader(csv_file, delimiter=",")
@@ -88,6 +92,7 @@ def get_control_positions(csv_filename):
 
 
 def draw_resized(img, name, scale):
+    """ show img resized by scale """
     resized_img = cv.resize(
         img, (int(img.shape[1]*scale), int(img.shape[0]*scale)))
     cv.imshow(name, resized_img)
@@ -99,6 +104,7 @@ def sub_image(img, rect):
 
 
 def pad_to_width(img, width):
+    """ pad img such that it is width pixels wide """
     return cv.copyMakeBorder(img, 0, 0, 0, width - img.shape[1], cv.BORDER_CONSTANT, value=(0, 0, 0))
 
 
@@ -120,6 +126,8 @@ def control_detect_test(
     win_name: name of window
     trackbar_info: iterator of (trackbar_name, trackbar_value, trackbar_max_value)
     write_to_video: if true, the raw camera input will be written to ./data/camera.avi
+    draw_trackbars: if true, draw trackbar_info normally
+        if false, use default value of trackbars as a constant and do not draw trackbars
     """
     cv.namedWindow(win_name)
 
@@ -216,6 +224,7 @@ def control_detect_test_static(input_image_name, *args, **kwargs):
 
 
 def control_detect_test_recorded_video(video_file_name, *args, **kwargs):
+    """ run control_detect_test, but read from video file instead of webcam """
     cap = cv.VideoCapture(video_file_name)
     transform_cache = np.zeros((490, 1650, 3), dtype=np.uint8)
 

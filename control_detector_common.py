@@ -9,6 +9,7 @@ DELIM_3 = DELIM_1 + np.pi
 
 # Returns True if right handed, False if left handed
 def do_lr_detection(edges):
+    """ detect if there are more white pixels on left or right side of image """
     center_x = edges.shape[1] // 2
     left = np.sum(edges[:, :center_x])
     right = np.sum(edges[:, center_x:])
@@ -18,6 +19,7 @@ def do_lr_detection(edges):
 
 # assumes angle between 0 and pi
 def do_angle_correction(angle, left_handed):
+    """ Based on whether there are more pixels on l/r side, decide whether to flip angle """
     flipped = False
 
     if angle <= DELIM_1 or angle >= DELIM_4:
@@ -37,6 +39,7 @@ def do_angle_correction(angle, left_handed):
 
 
 def draw_angle(drawing, angle, flipped):
+    """ Draw angle on image """ 
     center = (int(drawing.shape[0] / 2), int(drawing.shape[1] / 2))
     cv.circle(drawing, center, 5, (255, 255, 255), 1)
     r = center[0]
